@@ -79,7 +79,18 @@ Click 'Add New Pump' to create a new pump control window."""
         self.add_pump_btn = ttk.Button(add_pump_frame, text="+ Add New Pump", 
                                       command=self.add_pump, 
                                       style="Accent.TButton")
-        self.add_pump_btn.pack()
+        self.add_pump_btn.pack(side="left", padx=(0,10))
+
+        self.dispense_all_btn = ttk.Button(add_pump_frame, text = "Dispense All",
+                                           command=self.dispense_all)
+        
+        self.dispense_all_btn.pack(side="left", padx=5)
+
+        self.stop_all_btn = ttk.Button(add_pump_frame, text="Stop All",
+                               command=self.stop_all)
+        
+        self.stop_all_btn.pack(side="left", padx=5)
+
         
         # Active pumps list
         pumps_frame = ttk.LabelFrame(main_frame, text="Active Pumps", padding=15)
@@ -249,6 +260,21 @@ Click 'Add New Pump' to create a new pump control window."""
         log_entry = f"[{timestamp}] {message}\n"
         self.system_log.insert(tk.END, log_entry)
         self.system_log.see(tk.END)
+
+
+    def dispense_all(self):
+        """Trigger start_dispense on all connected pumps that are not currently dispensing."""
+        for pump in self.pump_windows.values():
+            if pump.is_connected and not pump.is_dispensing:
+                pump.start_dispense()
+
+    def stop_all(self):
+        """Trigger cancel_dispense on all currently dispensing pumps."""
+        for pump in self.pump_windows.values():
+            if pump.is_connected and pump.is_dispensing:
+                pump.cancel_dispense()
+    
+        
     
     def on_closing(self):
         """Handle main window closing"""

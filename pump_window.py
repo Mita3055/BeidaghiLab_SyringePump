@@ -256,16 +256,30 @@ class PumpWindow:
             self.connect_to_arduino()
         else:
             self.disconnect_from_arduino()
-    
+    """
     def connect_to_arduino(self):
-        """Connect to Arduino"""
+    # FAKE/SIMULATED connection for UI testing (no hardware required)
+        self.is_connected = True
+        self.port = "FAKE_PORT"
+        self.connect_btn.config(text="Disconnect")
+        self.status_var.set(f"Status: Connected to FAKE_PORT")
+        self.status_label.config(foreground="green")
+        self.dispense_btn.config(state="normal")
+        self.status_btn.config(state="normal")
+        self.update_window_title()
+        self.log_message(f"Connected to FAKE_PORT (SIMULATED)")
+        self.manager_callback('connect', self.pump_id, {'port': "FAKE_PORT"})
+
+    """
+    def connect_to_arduino(self):
+        #Connect to Arduino
         port = self.port_var.get()
         if not port:
             messagebox.showerror("Error", "Please select a COM port")
             return
         
         try:
-            self.serial_connection = serial.Serial(port, 9600, timeout=1)
+            self.serial_connection = serial.Serial(port, 115200, timeout=1)
             time.sleep(2)  # Wait for Arduino to initialize
             
             self.is_connected = True
@@ -292,6 +306,7 @@ class PumpWindow:
             messagebox.showerror("Connection Error", f"Failed to connect: {str(e)}")
             self.log_message(f"Connection failed: {str(e)}")
     
+
     def disconnect_from_arduino(self):
         """Disconnect from Arduino"""
         if self.serial_connection:
@@ -319,51 +334,52 @@ class PumpWindow:
         self.log_message("Disconnected")
         self.manager_callback('disconnect', self.pump_id, {})
     
+    """"
     def start_dispense(self):
-        """Start dispensing"""
-        if not self.is_connected or not self.serial_connection:
+        #Start dispensing (simulate if no hardware).
+        if not self.is_connected:
             return
-        
+    # REMOVE the check for serial_connection:
+    # if not self.serial_connection:
+    #     return
+
         try:
             volume = float(self.volume_var.get())
             rate = float(self.rate_var.get())
-            
             if volume <= 0 or rate <= 0:
                 messagebox.showerror("Invalid Input", "Volume and rate must be positive numbers")
                 return
-            
-            command = f"DISPENSE:{volume},{rate}\n"
-            self.serial_connection.write(command.encode())
-            
+
+            # Simulate dispensing
             self.is_dispensing = True
             self.dispense_btn.config(state="disabled")
             self.cancel_btn.config(state="normal")
-            
-            # Update window title
             self.update_window_title()
-            
-            self.log_message(f"Sent: {command.strip()}")
+            self.progress_var.set(f"Simulating dispense of {volume}mL at {rate}mL/min")
+            self.progress_bar['value'] = 100
+            self.log_message(f"Simulated: DISPENSE:{volume},{rate}")
             self.manager_callback('dispense_start', self.pump_id, {'volume': volume, 'rate': rate})
-            
         except ValueError:
             messagebox.showerror("Invalid Input", "Please enter valid numbers for volume and rate")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to send command: {str(e)}")
+
     
     def cancel_dispense(self):
-        """Cancel current dispensing"""
-        if not self.is_connected or not self.serial_connection:
+        #Cancel current dispensing (simulated if no hardware)
+        if not self.is_connected:
             return
-        
-        try:
-            self.serial_connection.write(b"CANCEL\n")
-            self.log_message("Sent: CANCEL")
-            self.manager_callback('dispense_cancel', self.pump_id, {})
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to send cancel: {str(e)}")
+
+        # For simulation, just update states (don't require serial_connection)
+        self.is_dispensing = False
+        self.dispense_btn.config(state="normal")
+        self.cancel_btn.config(state="disabled")
+        self.progress_bar['value'] = 0
+        self.progress_var.set("Dispense Cancelled (simulated)")
+        self.log_message("Simulated: CANCEL")
+        self.manager_callback('dispense_cancel', self.pump_id, {})
+
     
     def get_status(self):
-        """Request status from Arduino"""
+        #Request status from Arduino
         if not self.is_connected or not self.serial_connection:
             return
         
@@ -372,7 +388,65 @@ class PumpWindow:
             self.log_message("Sent: STATUS")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to get status: {str(e)}")
-    
+    """
+
+    def start_dispense(self):
+        """Start dispensing"""
+        if not self.is_connected or not self.serial_connection:
+            return
+
+        try:
+            volume = float(self.volume_var.get())
+            rate = float(self.rate_var.get())
+
+            if volume <= 0 or rate <= 0:
+                messagebox.showerror("Invalid Input", "Volume and rate must be positive numbers")
+                return
+
+            command = f"DISPENSE:{volume},{rate}\n"
+            self.serial_connection.write(command.encode())
+
+            self.is_dispensing = True
+            self.dispense_btn.config(state="disabled")
+            self.cancel_btn.config(state="normal")
+
+            # Update window title
+            self.update_window_title()
+
+            self.log_message(f"Sent: {command.strip()}")
+            self.manager_callback('dispense_start', self.pump_id, {'volume': volume, 'rate': rate})
+
+        except ValueError:
+            messagebox.showerror("Invalid Input", "Please enter valid numbers for volume and rate")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to send command: {str(e)}")
+
+    def cancel_dispense(self):
+        """Cancel current dispensing"""
+        if not self.is_connected or not self.serial_connection:
+            return
+
+        try:
+            self.serial_connection.write(b"CANCEL\n")
+            self.log_message("Sent: CANCEL")
+            self.manager_callback('dispense_cancel', self.pump_id, {})
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to send cancel: {str(e)}")
+
+    def get_status(self):
+        """Request status from Arduino"""
+        if not self.is_connected or not self.serial_connection:
+            return
+
+        try:
+            self.serial_connection.write(b"STATUS\n")
+            self.log_message("Sent: STATUS")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to get status: {str(e)}")
+
+        
+
+            
     def read_serial(self):
         """Read serial data in separate thread"""
         while self.is_connected and self.serial_connection:
